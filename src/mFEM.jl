@@ -25,7 +25,7 @@ export Mesh
 
 module Dim1
 import mFEM
-import PrettyPrint
+using ProgressBars
 
 function mesh(a,b,N)::mFEM.Mesh
   @assert N > 1
@@ -74,8 +74,8 @@ end
 
 # n index of basis element
 function gauss_quad(u::Function,mesh::mFEM.Mesh,n::Int)
-  a = mesh.Pb[mesh.T[n,1],1]
-  b = mesh.Pb[mesh.T[n,2],1]
+  a = mesh.P[mesh.T[n,1],1]
+  b = mesh.P[mesh.T[n,2],1]
 
   @assert a < b
   return (b-a) * _gauss(x-> u((b-a)*x/2 + (a+b)/2)) / 2
@@ -114,7 +114,7 @@ function stiffness_mat(mesh::mFEM.Mesh,c::Function)
 
   A = zeros(mesh.Nb,mesh.Nb) # TODO sparse matrix
 
-  for n = 1:mesh.N
+  for n = ProgressBar(1:mesh.N)
     for α = 1:mesh.Nlb_trial, β = 1:mesh.Nlb_test
 
       r = gauss_quad(mesh,n) do x::Float64
@@ -179,7 +179,7 @@ function test()
   f(x) = - exp(x) *(cos(x) - 2sin(x) - x*cos(x) - x*sin(x))
   g(x,i) = u(x)
 
-  m = mesh(0,1,128)
+  m = mesh(0,1,10000)
 
   return map(u,m.P) - Possion(m,c,f,g)
 end
