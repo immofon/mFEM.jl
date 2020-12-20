@@ -9,10 +9,10 @@ module mFEM
 
 
 struct Mesh
-  P::AbstractArray # be an information matrix consisting of the coordinates of all mesh nodes
+  P::Array # be an information matrix consisting of the coordinates of all mesh nodes
   Nm::Int # denotes the number of mesh nodes. Nm = size(P,1)
 
-  T::AbstractArray # be an information matrix consisting of the global node indices of 
+  T::Array # be an information matrix consisting of the global node indices of 
   N::Int # denotes the number of mesh elements. N = size(T,1)
 
   Integral::Function # (u::Function,n::Int)::Float64
@@ -23,8 +23,8 @@ export Mesh
 
 struct Basis
   Nb::Int # denote the total number of the finite element basis functions (= the number of unknowns)
-  Pb::AbstractArray # the nodes corresponding to the finite element basis functions.
-  Tb::AbstractArray # the nodes corresponding to the finite element basis functions.
+  Pb::Array # the nodes corresponding to the finite element basis functions.
+  Tb::Array # the nodes corresponding to the finite element basis functions.
   Nlb::Int # the number of local trial basis functions
   Dϕ::Function  # (k::Int, x::Tuple, n::Int, α::Int ) -> Real
                 # return the kth deriavtive of (n,α) in mesh basis function at x
@@ -58,10 +58,6 @@ function _gauss(u::Function)
   return sum(D)
 end
 
-# calc gauss_quad on the nth element of mesh
-# u: (x::Tuple)::Float64
-# n index of basis element
-
 
 function mesh(a,b,N)::mFEM.Mesh
   @assert N > 1
@@ -76,6 +72,9 @@ function mesh(a,b,N)::mFEM.Mesh
     T[i,:] = [i,i+1]
   end
 
+  # calc gauss_quad on the nth element of mesh
+  # u: (x::Tuple)::Float64
+  # n index of basis element
   function gauss_quad(u::Function,n::Int)
     a = P[T[n,1],1]
     b = P[T[n,2],1]
