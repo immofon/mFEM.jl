@@ -14,11 +14,11 @@ struct Mesh
   Nb::Int # denote the total number of the finite element basis functions (= the number of unknowns)
   Nlb_trial::Int # the number of local trial basis functions
   Nlb_test::Int # the number of local test basis functions
-  P::Array # be an information matrix consisting of the coordinates of all mesh nodes
-  T::Array # be an information matrix consisting of the global node indices of 
-  Pb::Array # the nodes corresponding to the finite element basis functions.
-  Tb_trial::Array # the nodes corresponding to the finite element basis functions.
-  Tb_test::Array # the nodes corresponding to the finite element basis functions.
+  P::AbstractArray # be an information matrix consisting of the coordinates of all mesh nodes
+  T::AbstractArray # be an information matrix consisting of the global node indices of 
+  Pb::AbstractArray # the nodes corresponding to the finite element basis functions.
+  Tb_trial::AbstractArray # the nodes corresponding to the finite element basis functions.
+  Tb_test::AbstractArray # the nodes corresponding to the finite element basis functions.
 end
 export Mesh
 
@@ -151,8 +151,8 @@ function load_vec(mesh::mFEM.Mesh,f::Function)
 end
 
 # g(x::Float64, boundary_type::Int)
-function set_boundary_cond!(mesh::mFEM.Mesh,boundarynodes::Array,
-    A::Array,b::Array,g::Function)
+function set_boundary_cond!(mesh::mFEM.Mesh,boundarynodes::AbstractArray,
+    A::AbstractArray,b::AbstractArray,g::Function)
   _,nA = size(A)
   nbn,_ = size(boundarynodes)
   for nb = 1:nbn
