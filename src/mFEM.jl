@@ -25,7 +25,7 @@ export Mesh
 
 module Dim1
 import mFEM
-using ProgressBars
+using ProgressMeter
 
 function mesh(a,b,N)::mFEM.Mesh
   @assert N > 1
@@ -114,7 +114,7 @@ function stiffness_mat(mesh::mFEM.Mesh,c::Function)
 
   A = zeros(mesh.Nb,mesh.Nb) # TODO sparse matrix
 
-  for n = ProgressBar(1:mesh.N)
+  @showprogress "stiffness_mat " for n = 1:mesh.N
     for α = 1:mesh.Nlb_trial, β = 1:mesh.Nlb_test
 
       r = gauss_quad(mesh,n) do x::Float64
@@ -135,7 +135,7 @@ end
 function load_vec(mesh::mFEM.Mesh,f::Function)
 
   b = zeros(mesh.Nb)
-  for n = 1:mesh.N
+  @showprogress "load_vec " for n = 1:mesh.N
     for  β = 1:mesh.Nlb_test
 
       r = gauss_quad(mesh,n) do x::Float64
@@ -179,7 +179,7 @@ function test()
   f(x) = - exp(x) *(cos(x) - 2sin(x) - x*cos(x) - x*sin(x))
   g(x,i) = u(x)
 
-  m = mesh(0,1,10000)
+  m = mesh(0,1,100)
 
   return map(u,m.P) - Possion(m,c,f,g)
 end
