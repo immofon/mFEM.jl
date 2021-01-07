@@ -1,6 +1,5 @@
 module Dim1
 import mFEM
-using ProgressMeter
 
 # calc gauss_quad on interval [-1,1]
 # u: (x::Float64)::Float64
@@ -235,71 +234,17 @@ function cubic_elem(mesh::mFEM.Mesh)::mFEM.Basis
   )
 end
 
-# - D(cDu) = f in Ω, f=g on ∂Ω
-# c(x::Tuple)
-function stiffness_mat(mesh::mFEM.Mesh,trial::mFEM.Basis,test::mFEM.Basis,c::Function)
-
-  A = zeros(test.Nb,trial.Nb) # TODO sparse matrix
-
-  @showprogress "stiffness_mat " for n = 1:mesh.N
-    for α = 1:trial.Nlb, β = 1:test.Nlb
-
-      r = mesh.Integral(n) do x::Tuple
-        return c(x) * trial.Dϕ(1,x,n,α) * test.Dϕ(1,x,n,β)
-      end
-
-      i = test.Tb[n,β]
-      j = trial.Tb[n,α]
-
-      A[i,j] += r
-    end
-  end
-
-  return A
-end
-
-# f(x::Tuple)
-function load_vec(mesh::mFEM.Mesh,test::mFEM.Basis,f::Function)
-
-  b = zeros(test.Nb)
-  @showprogress "load_vec " for n = 1:mesh.N
-    for  β = 1:test.Nlb
-
-      r = mesh.Integral(n) do x::Tuple
-        return f(x) * test.Dϕ(0,x,n,β)
-      end
-
-      i = test.Tb[n,β]
-
-      b[i] += r
-    end
-  end
-  return b
-end
-
-# g(x::Tuple, boundary_type::Int)
-function set_boundary_cond!(trial::mFEM.Basis,boundarynodes::AbstractArray,
-    A::AbstractArray,b::AbstractArray,g::Function)
-  nA = size(A,2)
-  nbn = size(boundarynodes,1)
-  for nb = 1:nbn
-    i,type = boundarynodes[nb,:]
-    A[i,:] = zeros(nA)
-    A[i,i] = 1
-    b[i] = g(tuple(trial.Pb[i,:]...),type)
-  end
-end
 
 function Possion(mesh::mFEM.Mesh,c::Function,f::Function,g::Function;
     trial::mFEM.Basis = linear_elem(mesh),test::mFEM.Basis = linear_elem(mesh))
   # generate boundary nodes
-  boundarynodes = [1 1;trial.Nb 1]
+  boundarynodes = [-1 1;-1 trial.Nb]
 
-  A = stiffness_mat(mesh,trial,test,c)
-  b = load_vec(mesh,test,f)
+  A = mFEM.stiffness_mat(mesh,trial,test,c)
+  b = mFEM.load_vec(mesh,test,f)
 
 
-  set_boundary_cond!(trial,boundarynodes,A,b,g)
+  mFEM.set_boundary_cond!(trial,boundarynodes,A,b,g)
   x = A \ b
   return x
 end

@@ -89,6 +89,64 @@ function uniform_trianglar_mesh(x0::Vector,x1::Vector,
   return mFEM.Mesh(P,size(P,1),T,size(T,1),gauss_quad)
 end
 
+function Dϕ_reference_trangular(k::Int,xt::Tuple,α::Int)
+  @assert α ∈ 1:3
+  @assert k ∈ 0:1
+  @assert length(xt) == 2
+
+  x,y = xt
+  if α == 1 # (0,0)
+    if k == 0
+      return 1 - x - y
+    elseif k == 1
+      return [-1,-1]
+    end
+  elseif α == 2 # (1,0)
+    if k == 0
+      return x
+    elseif k == 1
+      return [1,0]
+    end
+  elseif α == 3  # (0,1)
+    if k == 0
+      return y
+    elseif k == 1
+      return [0,1]
+    end
+  end
+end
+
+function reference2local(Dϕ_reference::Function;Pb::Array,Tb::Array,Nlb::Int)::Function
+  # kth deriavtive of basis function at x
+  function Dϕ(k::Int, xt::Tuple, n::Int, α::Int)
+    @assert α ∈ 1:Nlb
+    @assert k ∈ 0:1
+    @assert length(xt) == 2
+
+    local x1 = P[T[n,1],:]
+    local x2 = P[T[n,2],:]
+    local x3 = P[T[n,3],:]
+    local O = [x2-x1 x3-x1]
+
+    xhat = O \ (xt - x1)
+    return Dϕ_reference(k,xhat,α)
+  end
+
+  return Dϕ
+end
+
+
+function trangular_elem(mesh::mFEM.Mesh)::mFEM.Basis
+  Pb = copy(mesh.P)
+  Tb = copy(mesh.T)
+  Nlb = 3
+
+  return mFEM.Basis(size(Pb,1),Pb,Tb,size(Tb,1),Nlb,
+    reference2local(Dϕ_reference_trangular;Pb=Pb,Tb=Tb,Nlb=Nlb))
+end
+
+
+
 function test(n)
   tm = mFEM.Dim2.uniform_trianglar_mesh([0,0],[1,1],[n,n])
   u(x) = x[1]*x[2] *exp(x[1]^2 + x[2]^2)
