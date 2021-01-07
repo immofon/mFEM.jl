@@ -59,7 +59,7 @@ function _gauss(u::Function)
 end
 
 
-function mesh(a,b,N)::mFEM.Mesh
+function uniform_mesh(a,b,N)::mFEM.Mesh
   @assert N > 1
   @assert a < b
 
@@ -349,7 +349,7 @@ function test(n,;finite_elem::Function=linear_elem)
     return (x::Tuple) -> f(x[1])
   end
 
-  m = mesh(0,1,n)
+  m = uniform_mesh(0,1,n)
   trial = finite_elem(m)
   test= finite_elem(m)
 
@@ -362,6 +362,13 @@ test_linear(n) = test(n,finite_elem=linear_elem)
 test_cubic(n) = test(n,finite_elem=cubic_elem)
 
 end # Dim1
+
+module Dim2
+import mFEM
+
+
+end # Dim2
+
 
 # for test
 
