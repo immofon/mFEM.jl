@@ -4,11 +4,11 @@ using ProgressMeter
 
 struct Mesh
   P::Array # be an information matrix consisting of the coordinates of all mesh nodes
-  Nm::Int # denotes the number of mesh nodes. Nm = size(P,1)
-
-  T::Array # be an information matrix consisting of the global node indices of 
-  N::Int # denotes the number of mesh elements. N = size(T,1)
-
+  T::Array # be an information matrix consisting of the global node indices 
+  BNode::Array # be an information matrix consisting to the node indices of boundary nodes
+                # e.g. [0,2,3]
+  BEage::Array # e.g. [0 1;3 4;2 5], with counterclockwise 
+  BSurface::Array # e.g. [0 1 3; 2 3 5] with counterclockwise
   Integral::Function # (u::Function,n::Int)::Float64
                       # calc integral on the nth element of mesh
                       # u: (x::Tuple)::Float64
@@ -17,10 +17,13 @@ export Mesh
 
 export Basis
 struct Basis
-  Nb::Int # denote the total number of the finite element basis functions (= the number of unknowns)
+  Nlb::Int # the number of local trial basis functions
   Pb::Array # the nodes corresponding to the finite element basis functions.
   Tb::Array # the nodes corresponding to the finite element basis functions.
-  Nlb::Int # the number of local trial basis functions
+  BNode::Array # be an information matrix consisting to the node indices of boundary nodes
+                # e.g. [0,2,3]
+  BEage::Array # e.g. [0 1;3 4;2 5], with counterclockwise 
+  BSurface::Array # e.g. [0 1 3; 2 3 5] with counterclockwise
   Dϕ::Function  # (k::Int, x::Tuple, n::Int, α::Int ) -> Real
                 # return the kth deriavtive of (n,α) in mesh basis function at x
 end
@@ -30,9 +33,9 @@ export stiffness_mat,load_vec,set_boundary_cond!
 # c(x::Tuple)
 function stiffness_mat(mesh::mFEM.Mesh,trial::mFEM.Basis,test::mFEM.Basis,c::Function)
 
-  A = zeros(test.Nb,trial.Nb) # TODO sparse matrix
+  A = zeros(size(test.Pb,1),size(trial.Pb,1)) # TODO sparse matrix
 
-  @showprogress "stiffness_mat " for n = 1:mesh.N
+  @showprogress "stiffness_mat " for n = 1:size(mesh.T,1)
     for α = 1:trial.Nlb, β = 1:test.Nlb
 
       r = mesh.Integral(n) do x::Tuple
@@ -52,8 +55,8 @@ end
 # f(x::Tuple)
 function load_vec(mesh::mFEM.Mesh,test::mFEM.Basis,f::Function)
 
-  b = zeros(test.Nb)
-  @showprogress "load_vec " for n = 1:mesh.N
+  b = zeros(size(test.Pb,1))
+  @showprogress "load_vec " for n = 1:size(mesh.T,1)
     for  β = 1:test.Nlb
 
       r = mesh.Integral(n) do x::Tuple

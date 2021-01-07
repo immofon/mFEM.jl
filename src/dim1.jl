@@ -38,6 +38,10 @@ function uniform_mesh(a,b,N)::mFEM.Mesh
     T[i,:] = [i,i+1]
   end
 
+  BNode = [1,Nm]
+  BEage = []
+  BSurface = []
+
   # calc gauss_quad on the nth element of mesh
   # u: (x::Tuple)::Float64
   # n index of basis element
@@ -49,7 +53,7 @@ function uniform_mesh(a,b,N)::mFEM.Mesh
     return (b-a) * _gauss(x-> u(( (b-a)*x/2 + (a+b)/2, )) ) / 2
   end
 
-  return mFEM.Mesh(P,size(P,1),T,size(T,1),gauss_quad)
+  return mFEM.Mesh(P,T,BNode,BEage,BSurface,gauss_quad)
 end
 
 
@@ -179,8 +183,12 @@ function linear_elem(mesh::mFEM.Mesh)::mFEM.Basis
   Pb = copy(mesh.P)
   Tb = copy(mesh.T)
   Nlb = 2
+  BNode = copy(mesh.BNode)
+  BEage= copy(mesh.BEage)
+  BSurface= copy(mesh.BSurface)
+  BNode = copy(mesh.BNode)
 
-  return mFEM.Basis(size(Pb,1),Pb,Tb,Nlb,
+  return mFEM.Basis(Nlb,Pb,Tb,BNode,BEage,BSurface,
     reference2local(Dϕ_reference_linear;Pb=Pb,Tb=Tb,Nlb=Nlb))
 end
 
@@ -203,7 +211,16 @@ function quadatic_elem(mesh::mFEM.Mesh)::mFEM.Basis
     Tb[i,3] = (Tb[i,1] + Tb[i,2]) / 2
   end
 
-  return mFEM.Basis(size(Pb,1),Pb,Tb,Nlb,
+  BNode = zeros(Int,size(mesh.BNode,1),1)
+  for i in 1:size(BNode,1)
+    BNode[i] = 2 * mesh.BNode[i] - 1
+  end
+
+  BEage = copy(mesh.BEage)
+  BSurface = copy(mesh.BSurface)
+
+
+  return mFEM.Basis(Nlb,Pb,Tb,BNode,BEage,BSurface,
     reference2local(Dϕ_reference_quadratic;Pb=Pb,Tb=Tb,Nlb=Nlb)
   )
 end
@@ -229,7 +246,16 @@ function cubic_elem(mesh::mFEM.Mesh)::mFEM.Basis
   end
 
 
-  return mFEM.Basis(size(Pb,1),Pb,Tb,Nlb,
+ BNode = zeros(Int,size(mesh.BNode,1),1)
+  for i in 1:size(BNode,1)
+    BNode[i] = 3 * mesh.BNode[i] - 2
+  end
+
+  BEage = copy(mesh.BEage)
+  BSurface = copy(mesh.BSurface)
+
+
+  return mFEM.Basis(Nlb,Pb,Tb,BNode,BEage,BSurface,
     reference2local(Dϕ_reference_cubic;Pb=Pb,Tb=Tb,Nlb=Nlb)
   )
 end
@@ -238,7 +264,10 @@ end
 function Possion(mesh::mFEM.Mesh,c::Function,f::Function,g::Function;
     trial::mFEM.Basis = linear_elem(mesh),test::mFEM.Basis = linear_elem(mesh))
   # generate boundary nodes
-  boundarynodes = [-1 1;-1 trial.Nb]
+  boundarynodes = zeros(Int,size(trial.BNode,1),2)
+  for i=1:size(boundarynodes,1)
+    boundarynodes[i,:] = [-1,trial.BNode[i]]
+  end
 
   A = mFEM.stiffness_mat(mesh,trial,test,c)
   b = mFEM.load_vec(mesh,test,f)
